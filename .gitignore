@@ -1,11 +1,13 @@
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-
+*.gsheet
 node_modules
 *.swp
 # C extensions
 *.so
+
+*Icon* 
 
 # Distribution / packaging
 .Python
@@ -55,6 +57,10 @@ coverage.xml
 docs/_build/
 
 Icon^M 
+<<<<<<< HEAD
 .DS_Store
 
 .Rproj.user
+=======
+.DS_Store
+>>>>>>> upstream/dev-dan-shiny
