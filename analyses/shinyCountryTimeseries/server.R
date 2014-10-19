@@ -18,7 +18,7 @@ library(rCharts)
 url <- "https://raw.githubusercontent.com/cmrivers/ebola/master/country_timeseries.csv"
 
 data <- getURL(url, ssl.verifypeer = FALSE)
-df <- read.csv(textConnection(data))
+df <- read.csv(textConnection(data), stringsAsFactors = FALSE)
 
 df1_noDate <- df[, !names(df) %in% c("Date")]
 day <- c(0:df1_noDate[1, 1])
@@ -59,16 +59,15 @@ df5_melt$type[df5_melt$type == "Case"] <- "Cases"
 # Pre-processing for rCharts
 #############################
 source("R/preprocess.R")
-url <- "https://raw.githubusercontent.com/cmrivers/ebola/master/country_timeseries.csv"
 
-df <- getData(url) %>%
+df_long <- df %>%
     getLongFormat()
 
-df_ndv3 <- df %>%
+df_ndv3 <- df_long %>%
     group_by(Country) %>%
     top_n(Date, n = 1)
 
-df_rickshaw <- df %>%
+df_rickshaw <- df_long %>%
     splitByIndicator() %>%
     mergeCasesAndDeaths() %>%
     mutate(Date = toJsDate(Date)) %>%
@@ -139,3 +138,4 @@ shinyServer(function(input, output) {
     })
     
 })
+
