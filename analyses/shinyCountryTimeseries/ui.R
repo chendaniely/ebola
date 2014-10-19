@@ -1,5 +1,7 @@
 # ui.R
 library(shiny)
+library(rCharts)
+
 
 shinyUI(pageWithSidebar(
     
