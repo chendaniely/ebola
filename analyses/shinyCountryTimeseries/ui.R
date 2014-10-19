@@ -1,6 +1,8 @@
 # ui.R
-library(shiny)
+
+# devtools::install_github("rCharts", "ramnathv", ref = "dev")
 library(rCharts)
+library(shiny)
 
 
 shinyUI(pageWithSidebar(
