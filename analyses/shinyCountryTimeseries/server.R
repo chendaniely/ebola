@@ -11,6 +11,9 @@ library(shiny)
 library(foreign)
 library(RColorBrewer)
 
+#############################
+# Pre-processing for ggplot2
+#############################
 url <- "https://raw.githubusercontent.com/cmrivers/ebola/master/country_timeseries.csv"
 
 data <- getURL(url, ssl.verifypeer = FALSE)
@@ -51,8 +54,30 @@ df5_melt <- melt(df4)
 names(df5_melt) <- c("type", "place", "day", "count")
 df5_melt$type[df5_melt$type == "Case"] <- "Cases"
 
+#############################
+# Pre-processing for rCharts
+#############################
+source("R/preprocess.R")
+url <- "https://raw.githubusercontent.com/cmrivers/ebola/master/country_timeseries.csv"
 
+df <- getData(url) %>%
+    getLongFormat()
 
+df_ndv3 <- df %>%
+    group_by(Country) %>%
+    top_n(Date, n = 1)
+
+df_rickshaw <- df %>%
+    splitByIndicator() %>%
+    mergeCasesAndDeaths() %>%
+    mutate(Date = toJsDate(Date)) %>%
+    arrange(Date)
+
+names(df_rickshaw) <- c("Date", "Country", "Cases", "Deaths")
+
+#############################
+# server.R
+#############################
 shinyServer(function(input, output) {
 
   data_plot <- reactive({
@@ -86,8 +111,30 @@ shinyServer(function(input, output) {
       return(h)
     }
   })
-
+  
+  ## ggplot2
   output$plot <- renderPlot({
     print(plot())
   })
+  
+  ## rickshaw
+  output$rickshaw = renderChart2({
+      r1 <- Rickshaw$new()
+      if (input$indicator == "Cases") {
+          r1$layer(Cases ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+      } else if (input$indicator == "Deaths") {
+          r1$layer(Deaths ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+      }
+      r1$set(width = 600, slider = TRUE)
+      return(r1)
+  })
+  
+  ## nvd3
+  output$nvd3 = renderChart2({
+      n1 <- nvd3Plot(Count ~ Type, group = "Country", data = df_ndv3, type = input$type,
+                  id = "nvd3", width = 800)
+      n1$chart(stacked = input$stack)
+      return(n1)
+  })
+  
 })
