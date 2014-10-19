@@ -1,6 +1,6 @@
 # server.R
 
-# devtools::install_github("rCharts", "ramnathv", ref = "dev)
+# devtools::install_github("rCharts", "ramnathv", ref = "dev")
 library(RCurl)
 library(ggplot2)
 library(stringr)
