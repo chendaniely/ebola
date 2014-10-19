@@ -1,5 +1,6 @@
 # server.R
 
+# devtools::install_github("rCharts", "ramnathv", ref = "dev)
 library(RCurl)
 library(ggplot2)
 library(stringr)
@@ -10,6 +11,7 @@ library(scales)
 library(shiny)
 library(foreign)
 library(RColorBrewer)
+library(rCharts)
 
 #############################
 # Pre-processing for ggplot2
@@ -24,16 +26,16 @@ day <- c(0:df1_noDate[1, 1])
 df3_merge <- data.frame(day)
 
 for(i in 2:ncol(df1_noDate)){
-  df_temp <- df1_noDate[, c(1, i)]
-  df_temp <- na.omit(df_temp)
-  last <- nrow(df_temp)
-  last
-  df_temp[last,1]
-  day.offset <- df_temp[last,1]
-  df_temp$day.adj <- df_temp$Day - day.offset
-  df_temp
-  df3_merge <- merge(x = df3_merge, y = df_temp[, names(df_temp) != "Day"],
-                     by.x = "day", by.y = "day.adj", all.x = TRUE)
+    df_temp <- df1_noDate[, c(1, i)]
+    df_temp <- na.omit(df_temp)
+    last <- nrow(df_temp)
+    last
+    df_temp[last,1]
+    day.offset <- df_temp[last,1]
+    df_temp$day.adj <- df_temp$Day - day.offset
+    df_temp
+    df3_merge <- merge(x = df3_merge, y = df_temp[, names(df_temp) != "Day"],
+                       by.x = "day", by.y = "day.adj", all.x = TRUE)
 }
 
 row.names(df3_merge) <- df3_merge$day
@@ -79,62 +81,63 @@ names(df_rickshaw) <- c("Date", "Country", "Cases", "Deaths")
 # server.R
 #############################
 shinyServer(function(input, output) {
-
-  data_plot <- reactive({
-    df_plot <- df5_melt[!is.na(df5_melt$count), ]
-    all <- c("Guinea", "Liberia", "SierraLeone", "Nigeria", "Senegal")
-    if(input$countries == "All"){selection <- all}
-    else{selection <- input$countries}
-    df_plot <- df_plot[df_plot$place %in% selection, ]
-  })
-
-  plot <- reactive({
-    all <- c("Guinea", "Liberia", "SierraLeone", "Nigeria", "Senegal")
-    c_colors <- brewer.pal(length(all), 'Set1')
-    names(c_colors) <- all
-    g <- ggplot(data = data_plot(),
-                aes(x = as.numeric(day), y = as.numeric(count),
-                    group = place, color = place)) +
-                        geom_point() + geom_line()+
-                            facet_grid(~ type) +
-                                scale_x_continuous(name="Days after first report") +
-                                    scale_y_continuous(name="Counts") +
-                                        scale_colour_manual(name="Country", values=c_colors) +
-                                          ggtitle("Number of observations for days after first report")
-
-    if(!input$log){
-      return(g)
-    } else{
-      h <- g + scale_y_continuous(trans=log10_trans()) +
-          scale_y_log10(name="Counts") +
-              ggtitle("Number of observations for days after first report (log10 scale)")
-      return(h)
-    }
-  })
-  
-  ## ggplot2
-  output$plot <- renderPlot({
-    print(plot())
-  })
-  
-  ## rickshaw
-  output$rickshaw = renderChart2({
-      r1 <- Rickshaw$new()
-      if (input$indicator == "Cases") {
-          r1$layer(Cases ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
-      } else if (input$indicator == "Deaths") {
-          r1$layer(Deaths ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
-      }
-      r1$set(width = 600, slider = TRUE)
-      return(r1)
-  })
-  
-  ## nvd3
-  output$nvd3 = renderChart2({
-      n1 <- nvd3Plot(Count ~ Type, group = "Country", data = df_ndv3, type = input$type,
-                  id = "nvd3", width = 800)
-      n1$chart(stacked = input$stack)
-      return(n1)
-  })
-  
+    
+    data_plot <- reactive({
+        df_plot <- df5_melt[!is.na(df5_melt$count), ]
+        all <- c("Guinea", "Liberia", "SierraLeone", "Nigeria", "Senegal")
+        if(input$countries == "All"){selection <- all}
+        else{selection <- input$countries}
+        df_plot <- df_plot[df_plot$place %in% selection, ]
+    })
+    
+    plot <- reactive({
+        all <- c("Guinea", "Liberia", "SierraLeone", "Nigeria", "Senegal")
+        c_colors <- brewer.pal(length(all), 'Set1')
+        names(c_colors) <- all
+        g <- ggplot(data = data_plot(),
+                    aes(x = as.numeric(day), y = as.numeric(count),
+                        group = place, color = place)) +
+            geom_point() + geom_line()+
+            facet_grid(~ type) +
+            scale_x_continuous(name="Days after first report") +
+            scale_y_continuous(name="Counts") +
+            scale_colour_manual(name="Country", values=c_colors) +
+            ggtitle("Number of observations for days after first report")
+        
+        if(!input$log){
+            return(g)
+        } else{
+            h <- g + scale_y_continuous(trans=log10_trans()) +
+                scale_y_log10(name="Counts") +
+                ggtitle("Number of observations for days after first report (log10 scale)")
+            return(h)
+        }
+    })
+    
+    ## ggplot2
+    output$plot <- renderPlot({
+        print(plot())
+    })
+    
+    ## rickshaw
+    output$rickshaw = renderChart2({
+        r1 <- Rickshaw$new()
+        if (input$indicator == "Cases") {
+            r1$layer(Cases ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+        } else if (input$indicator == "Deaths") {
+            r1$layer(Deaths ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+        }
+        r1$set(width = 600, slider = TRUE)
+        return(r1)
+    })
+    
+    ## nvd3
+    output$nvd3 = renderChart2({
+        n1 <- nvd3Plot(Count ~ Type, group = "Country", data = df_ndv3, type = input$type,
+                       id = "nvd3", width = 800)
+        n1$chart(stacked = input$stack)
+        return(n1)
+    })
+    
 })
+

@@ -5,7 +5,7 @@ shinyUI(pageWithSidebar(
     
     ## Application title
     headerPanel("Plotting Ebola"),
-#     tags$header(includeScript("google-analytics.js")),
+    ## tags$header(includeScript("google-analytics.js")),
     
     sidebarPanel(
         ## Tab 1 - ggplot2
@@ -26,10 +26,10 @@ shinyUI(pageWithSidebar(
         conditionalPanel(condition = "input.conditionedPanels==2",
                          helpText("Please select an indicator to display."),
                          radioButtons("indicator",
-                                     label = h3("Indicators"),
-                                     choices = c("Cases" = "Cases",
-                                                 "Deaths" = "Deaths"),
-                                     selected = "Cases")
+                                      label = h3("Indicators"),
+                                      choices = c("Cases" = "Cases",
+                                                  "Deaths" = "Deaths"),
+                                      selected = "Cases")
         ),
         ## Tab3 - NVD3
         conditionalPanel(condition = "input.conditionedPanels==3",
@@ -61,11 +61,10 @@ shinyUI(pageWithSidebar(
             tabPanel("NVD3", value = 3,
                      p("This graphs the most recently reported cumulative cases and deaths for each country."),
                      showOutput("nvd3", "nvd3")
-            
+                     
             ),
             ## param needed to generate tabs
             id = "conditionedPanels"
-            
         )
     )
 ))
