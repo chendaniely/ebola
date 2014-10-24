@@ -9,6 +9,7 @@ shinyUI(fluidPage(
     sidebarLayout(
         sidebarPanel("Interactive plot components",
                      uiOutput("countriesList"),
+					 radioButtons("date_offset", "Date range:", c("Relative"="relative", "Absolute"="absolute")),
                      checkboxInput("log", "Plot y-axis on log scale")
                      ),
 

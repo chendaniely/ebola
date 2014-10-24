@@ -16,40 +16,22 @@ url <- "https://raw.githubusercontent.com/cmrivers/ebola/master/country_timeseri
 data <- getURL(url, ssl.verifypeer = FALSE)
 df <- read.csv(textConnection(data))
 #Drop the Date col
-df1_noDate <- df[, !names(df) %in% c("Date")]
-#Build a series from 0...latest day in data set
-day <- c(0:max(df1_noDate$Day))
-#We'll add updates on each day we have data for each country here
-df3_merge <- data.frame(day)
-#For each country:
-for(country in 2:ncol(df1_noDate)){
-  df_temp <- df1_noDate[, c(1, country)] #Day,(Cases|Deaths)_Country
-  #Data set is snapshots at day of reporting, with NAs representing "no change"/"no new data"
-  #so ignore those with NAs.
-  df_temp <- na.omit(df_temp)
+df <- df[, !names(df) %in% c("Date")]
 
-  #Rescale all series so day 0 == first reported case/death
-  df_temp$day.adj <- df_temp$Day - min(df_temp$Day)
+#Convert to long table (day, type_place, count)
+long <- na.omit(melt(df, id.vars=c("Day")))
+#Split by _
+long[,c("type","place")] <- colsplit(long$variable, "_", c("type","place"))
 
-  df3_merge <- merge(x = df3_merge, y = df_temp[, names(df_temp) != "Day"],
-                     by.x = "day", by.y = "day.adj", all.x = TRUE)
-}
+long <- long[,-2] #Drop old _-delimited col
 
-row.names(df3_merge) <- df3_merge$day
-df3_merge <- df3_merge[, names(df3_merge) != "day"]
+long$type[long$type == "Case"] <- "Cases"
+names(long)[1] <- "absolute.days"
+names(long)[2] <- "count"
 
-df4 <- as.data.frame(t(as.matrix(df3_merge)))
+long <- long %>% group_by(place) %>% mutate(relative.days = absolute.days - min(absolute.days)) %>% mutate(count=as.numeric(count))
 
-vars <- colsplit(row.names(df4), "_", c("type", "place"))
-df4 <- cbind(vars, df4)
-row.names(df4) <- NULL
-
-df5_melt <- melt(df4)
-names(df5_melt) <- c("type", "place", "day", "count")
-df5_melt$type[df5_melt$type == "Case"] <- "Cases"
-
-
-all <- unique(df5_melt$place)
+all <- unique(long$place)
 c_colors <- brewer.pal(length(all), 'Set1')
 names(c_colors) <- all
 
@@ -58,14 +40,14 @@ theme_set(theme_minimal())
 shinyServer(function(input, output) {
 
   data_plot <- reactive({
-    df_plot <- df5_melt[!is.na(df5_melt$count), ]
+#    df_plot <- long[!is.na(long$count), ]
+	df_plot <- long
 	selection <- input$countries
 	if("All" %in% input$countries || length(input$countries) == 0 ){
 		selection <- all
 	}
    df_plot %>% 
-	 filter(place %in% selection) %>%
-     mutate(count = as.numeric(count), day=as.numeric(day))
+	 filter(place %in% selection)
   })
   
   output$countriesList <- renderUI({
@@ -78,9 +60,10 @@ shinyServer(function(input, output) {
 
 
   plot <- reactive({
+	type = paste0(input$date_offset,".days")
     g <- ggplot(data = data_plot(),
-                aes(x = day, y = count,
-                    group = place, color = place)) +
+                aes_string(x = type, y = "count",
+                    group = "place", color = "place")) +
                         geom_point() + geom_line()+
                             facet_grid(~ type) +
                                 scale_x_continuous(name="Days after first report") +
