@@ -15,11 +15,7 @@ getData <- function(url) {
 
 standardizeDate <- function(date) {
     ## converts non-stanard dates to ISO 8601 format     
-    if (nchar(date) < 9) {
-        newDate <- format(as.Date(date, "%m/%d/%y"))  
-    } else {
-        newDate <- format(as.Date(date, "%m/%d/%Y"))
-    }
+    newDate <- format(as.Date(date, "%m/%d/%Y"))  
     return(newDate)
 }
 
