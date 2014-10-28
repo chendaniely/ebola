@@ -57,4 +57,10 @@ coverage.xml
 docs/_build/
 
 Icon^M 
+<<<<<<< HEAD
 .DS_Store
+
+.Rproj.user
+=======
+.DS_Store
+>>>>>>> upstream/dev-dan-shiny
