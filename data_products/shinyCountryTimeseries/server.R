@@ -1,5 +1,4 @@
 # server.R
-
 library(RCurl)
 library(ggplot2)
 library(stringr)
@@ -36,6 +35,27 @@ c_colors <- brewer.pal(length(all), 'Set1')
 names(c_colors) <- all
 
 theme_set(theme_minimal())
+
+#############################
+# Pre-processing for rCharts
+#############################
+source("R/preprocess.R")
+
+df <- getData(url) %>%
+    getLongFormat()
+
+df_ndv3 <- df %>%
+    group_by(Country) %>%
+    top_n(Date, n = 1)
+
+df_rickshaw <- df %>%
+    splitByIndicator() %>%
+    mergeCasesAndDeaths() %>%
+    mutate(Date = toJsDate(Date)) %>%
+    arrange(Date)
+
+names(df_rickshaw) <- c("Date", "Country", "Cases", "Deaths")
+#############################
 
 shinyServer(function(input, output) {
 
@@ -85,4 +105,25 @@ shinyServer(function(input, output) {
   output$plot <- renderPlot({
     print(plot())
   })
+  
+  ## rickshaw
+  output$rickshaw = renderChart2({
+      r1 <- Rickshaw$new()
+      if (input$indicator == "Cases") {
+          r1$layer(Cases ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+      } else if (input$indicator == "Deaths") {
+          r1$layer(Deaths ~ Date, group = 'Country', data = df_rickshaw, type = 'line')
+      }
+      r1$set(width = 600, slider = TRUE)
+      return(r1)
+  })
+  
+  ## nvd3
+  output$nvd3 = renderChart2({
+      n1 <- nvd3Plot(Count ~ Type, group = "Country", data = df_ndv3, type = input$type,
+                     id = "nvd3", width = 600)
+      n1$chart(stacked = input$stack)
+      return(n1)
+  })
+  
 })
